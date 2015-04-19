@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 *.swp
+bundle.js
+node_modules
