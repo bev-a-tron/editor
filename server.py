@@ -10,30 +10,6 @@ import sys
 from subprocess import Popen, PIPE
 from threading  import Thread
 
-def tee(infile, *files):
-    """Print `infile` to `files` in a separate thread."""
-    def fanout(infile, *files):
-        for line in iter(infile.readline, ''):
-            for f in files:
-                #import pdb; pdb.set_trace()  # XXX BREAKPOINT
-                #f.write(line.decode())
-        infile.close()
-    t = Thread(target=fanout, args=(infile,)+files)
-    t.daemon = True
-    t.start()
-    return t
-
-def teed_call(cmd_args, **kwargs):
-    stdout, stderr = [kwargs.pop(s, None) for s in ('stdout', 'stderr')]
-    p = Popen(cmd_args,
-              stdout=PIPE if stdout is not None else None,
-              stderr=PIPE if stderr is not None else None,
-              **kwargs)
-    threads = []
-    if stdout is not None: threads.append(tee(p.stdout, stdout, sys.stdout))
-    if stderr is not None: threads.append(tee(p.stderr, stderr, sys.stderr))
-    for t in threads: t.join() # wait for IO completion
-    return p.wait()
 
 @app.route('/execute', methods=['POST'])
 def execute():
@@ -45,12 +21,23 @@ def execute():
     tf.file.write(bytes(code, 'utf-8'))
     tf.flush()
 
-    fout, ferr = io.StringIO(), io.StringIO()
-    exitcode = teed_call(["python", tf.name], stdout=fout, stderr=ferr)
-    stdout = fout.getvalue()
-    stderr = ferr.getvalue()
+    # fout, ferr = io.StringIO(), io.StringIO()
 
-    return flask.jsonify({'out': stdout, 'err': stderr})
+    stdout = open('stdout', 'w+')
+    stderr = open('stderr', 'w+')
+    exitcode = subprocess.call(["python", tf.name], stdout=stdout, stderr=stderr)
+    #stdout = fout.getvalue()
+    #stderr = ferr.getvalue()
+    stdout.close()
+    stderr.close()
+
+    stdout = open('stdout', 'r').read()
+    stderr = open('stderr', 'r').read()
+
+    data = {'out': stdout, 'err': stderr}
+    stdout.close()
+    stderr.close()
+    return flask.jsonify(data)
 
 @app.route('/')
 def base():
