@@ -1,22 +1,12 @@
 import flask
-import json
 import subprocess
+import json
 import tempfile
 import io
 
 app = flask.Flask(__name__)
 
-import sys
-from subprocess import Popen, PIPE
-from threading  import Thread
-
-
-@app.route('/execute', methods=['POST'])
-def execute():
-    data = json.loads(flask.request.data)
-    code = data['code']
-
-    code = 'print("foo")'
+def execute_code(code):
     tf = tempfile.NamedTemporaryFile()
     tf.file.write(bytes(code, 'utf-8'))
     tf.flush()
@@ -31,13 +21,21 @@ def execute():
     stdout.close()
     stderr.close()
 
-    stdout = open('stdout', 'r').read()
-    stderr = open('stderr', 'r').read()
+    stdout = open('stdout', 'r')
+    stderr = open('stderr', 'r')
 
-    data = {'out': stdout, 'err': stderr}
+    data = {'stdout': stdout.read(), 'stderr': stderr.read()}
     stdout.close()
     stderr.close()
-    return flask.jsonify(data)
+    return data
+
+
+@app.route('/execute', methods=['POST'])
+def execute():
+    data = json.loads(u.request.data)
+    code = data['code']
+    result = execute_code(code)
+    return flask.jsonify(result)
 
 @app.route('/')
 def base():
