@@ -33,7 +33,7 @@ def execute_code(code):
 @app.route('/execute', methods=['POST'])
 def execute():
     # fixme: don't decode this
-    data = json.loads(flask.request.data.decode())
+    data = flask.request.json
     code = data['code']
     result = execute_code(code)
     return flask.jsonify(result)

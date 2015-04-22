@@ -11,7 +11,8 @@
   <body>
     <textarea id="editor"></textarea>
     <button onclick="postToBackend();">Submit</button>
-    <iframe id="result"></iframe>
+    <!--<iframe id="result"></iframe>-->
+    <div id="result"></div>
     <script>
 
       var editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
@@ -31,7 +32,16 @@
         var code = document.getElementById("editor").value;
         var xmlhttp = new XMLHttpRequest();
         xmlhttp.open("POST","http://localhost:5000/execute");
-        //xmlhttp.setRequestHeader("Content-Type", "application/json;");
+        xmlhttp.setRequestHeader("Content-Type", "application/json;");
+        xmlhttp.onload = function () {
+          if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            var code = JSON.parse(xmlhttp.response);
+            var display  = (code.stderr) ? code.stderr : code.stdout;
+            var el = document.getElementById("result")
+            if (code.stderr) el.style.color = 'red';
+            el.innerHTML = display;
+          }
+        }
         xmlhttp.send(JSON.stringify({user:"1234", code:code}));
       }
 
